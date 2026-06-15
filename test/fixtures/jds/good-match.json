@@ -1,0 +1,9 @@
+{
+  "id": "fixture-good-match",
+  "url": "https://example.test/jobs/fixture-good-match",
+  "title": "AI 应用实习生",
+  "company": "广州智流科技有限公司",
+  "salary": "3-5K",
+  "city": "广州",
+  "jd": "岗位职责：参与 AI 应用和 Agent 工作流的搭建，调用主流 LLM API 完成文本处理能力，协助进行 prompt 调优、效果测试和迭代；结合业务流程使用 n8n 或 dify 完成自动化编排，并整理使用文档。岗位要求：本科在校生可投，每周至少实习 3 天；有 ChatGPT、Claude、DeepSeek 等大模型使用经验；做过 n8n、dify、AI Agent 或自动化项目者优先；具备基础编程能力和主动沟通意识。"
+}

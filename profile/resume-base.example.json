@@ -1,0 +1,44 @@
+{
+  "name": "你的姓名",
+  "gender": "",
+  "age": 0,
+  "hometown": "",
+  "phone": "",
+  "email": "you@example.com",
+  "expect": {
+    "salary": "面议",
+    "city": "广州"
+  },
+  "education": [
+    {
+      "school": "示例大学",
+      "degree": "本科",
+      "major": "你的专业",
+      "period": "2021-2025"
+    }
+  ],
+  "certificates": ["CET-4"],
+  "strengths": [
+    "在这里写一句核心优势（自驱 / 快速上手 等）。",
+    "再写一句与目标岗位相关的能力亮点。"
+  ],
+  "work": [
+    {
+      "company": "示例公司",
+      "role": "实习生",
+      "period": "2025.01-2025.04",
+      "bullets": ["你负责的工作内容", "可量化的成果"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "示例项目",
+      "tag": "个人",
+      "period": "2024.09-2025.01",
+      "bullets": ["项目做了什么", "用了什么技术", "量化成果（如效率 +40%）"]
+    }
+  ],
+  "skills": [
+    { "name": "技能分类", "desc": "该分类下的具体能力说明。" }
+  ]
+}

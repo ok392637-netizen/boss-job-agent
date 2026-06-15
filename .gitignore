@@ -1,0 +1,17 @@
+node_modules/
+
+data/agent.db
+data/agent.db-*
+data/acceptance.db
+data/acceptance.db-*
+data/browser-profile/
+data/browser-profile.lock
+data/resumes/
+data/logs/
+
+.env
+*.log
+
+# 个人真实档案（仅提交 *.example.* 模板）
+profile/profile.md
+profile/resume-base.json

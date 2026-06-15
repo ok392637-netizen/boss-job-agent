@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="utf-8"><title>Greet fixture</title></head>
+  <body>
+    <button class="btn-startchat" type="button">立即沟通</button>
+    <section id="chat" hidden>
+      <textarea class="chat-input" placeholder="输入消息"></textarea>
+      <button class="btn-send" type="button">发送</button>
+    </section>
+    <script>
+      window.__startChatClicked = false;
+      window.__sent = false;
+      document.querySelector(".btn-startchat").addEventListener("click", () => {
+        window.__startChatClicked = true;
+        document.querySelector("#chat").hidden = false;
+      });
+      document.querySelector(".btn-send").addEventListener("click", () => {
+        window.__sent = true;
+      });
+    </script>
+  </body>
+</html>

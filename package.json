@@ -1,0 +1,28 @@
+{
+  "name": "boss-job-agent",
+  "version": "1.0.0",
+  "description": "Local Boss Zhipin job application agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "login": "node src/cli.js login",
+    "scan": "node src/cli.js scan",
+    "greet": "node src/cli.js greet",
+    "poll": "node src/cli.js poll",
+    "status": "node src/cli.js status",
+    "test-notify": "node src/cli.js test-notify",
+    "run": "node src/cli.js run",
+    "acceptance": "node scripts/acceptance.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "commander": "^15.0.0",
+    "docx": "^9.7.1",
+    "jszip": "^3.10.1",
+    "patchright": "^1.60.2"
+  }
+}

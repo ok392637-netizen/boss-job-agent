@@ -1,0 +1,24 @@
+{
+  "search": {
+    "city": "101280100",
+    "queries": ["AI产品 实习", "AI运营 实习", "AI Agent 实习", "AI应用 实习", "AI HR 实习", "AI招聘 实习"],
+    "salary": "3-8K",
+    "experienceFilter": "在校/应届",
+    "maxJobsPerScan": 8
+  },
+  "scan": {
+    "jobDelaySec": [18, 50],
+    "queryDelaySec": [30, 90]
+  },
+  "screening": { "passScore": 45 },
+  "greeting": {
+    "dryRun": true,
+    "dailyLimit": 30,
+    "activeHours": [9, 21],
+    "minDelaySec": 25,
+    "maxDelaySec": 90
+  },
+  "poll": { "intervalMin": 15 },
+  "lark": { "userOpenId": "ou_REPLACE_WITH_YOUR_OPEN_ID" },
+  "llm": { "model": "deepseek-v4-pro", "fallbackModel": "deepseek-chat" }
+}

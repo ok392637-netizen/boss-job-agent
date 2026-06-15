@@ -1,0 +1,9 @@
+{
+  "id": "fixture-mismatch",
+  "url": "https://example.test/jobs/fixture-mismatch",
+  "title": "高级算法工程师",
+  "company": "广州深算智能科技有限公司",
+  "salary": "35-50K",
+  "city": "广州",
+  "jd": "负责大模型训练平台和分布式训练框架研发。要求计算机相关专业硕士及以上学历，3 年以上算法工程经验，精通 CUDA/C++、算子优化、PyTorch 分布式训练和多机多卡性能调优；有百亿参数模型预训练经验，能够全职坐班并独立负责核心训练系统。"
+}
