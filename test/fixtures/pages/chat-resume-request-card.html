@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat resume request card fixture</title>
+  </head>
+  <body>
+    <div class="chat-container page-container">
+      <div class="message-content">
+        <div class="chat-record">
+          <div class="chat-message">
+            <ul class="im-list" id="messages">
+              <li class="message-item item-friend">
+                <div class="message-content">
+                  <div class="message-dialog-both message-card-wrap green">
+                    <div class="message-card-top-wrap">
+                      <div class="message-card-top-content">
+                        <h3 class="message-card-top-title message-card-top-text">
+                          我想要一份您的附件简历
+                        </h3>
+                      </div>
+                    </div>
+                    <div class="message-card-buttons">
+                      <span class="card-btn">拒绝</span>
+                      <span class="card-btn">同意</span>
+                    </div>
+                    <div class="geekboom-footer-content">
+                      <p>或者发送</p>
+                      <div class="geekboom-footer">
+                        <a href="javascript:;" class="link-agree" id="resume-card-action">
+                          <span>附件简历</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.__events = [];
+      document.querySelector("#resume-card-action").addEventListener("click", () => {
+        window.__events.push("card-resume");
+        const item = document.createElement("li");
+        item.className = "message-item item-system";
+        item.textContent = "对方已同意，您的附件简历已发送给对方";
+        document.querySelector("#messages").append(item);
+      });
+    </script>
+  </body>
+</html>

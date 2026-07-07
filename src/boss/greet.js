@@ -123,7 +123,7 @@ export function assertGreetAllowed(
   }
 
   const [startHour, endHour] = config.greeting.activeHours;
-  const hour = now.getHours();
+  const hour = chinaHour(now);
   if (hour < startHour || hour >= endHour) {
     throw new GreetConstraintError(
       `Greeting is only allowed during ${startHour}:00-${endHour}:00`,
@@ -250,8 +250,13 @@ async function safeBodyText(page) {
 }
 
 function localDate(date) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
+  const china = new Date(date.getTime() + 8 * 60 * 60 * 1_000);
+  return china.toISOString().slice(0, 10);
+}
+
+function chinaHour(date) {
+  const china = new Date(date.getTime() + 8 * 60 * 60 * 1_000);
+  return Number.parseInt(china.toISOString().slice(11, 13), 10);
 }
 
 function localTimestamp() {

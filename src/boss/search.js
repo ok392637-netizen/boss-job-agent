@@ -4,7 +4,7 @@ import {
   launchBrowser,
   trackPageNavigations,
 } from "../browser.js";
-import { deriveJobId } from "../db.js";
+import { deriveJobId, normalizeHrFields } from "../db.js";
 import { notifyText } from "../notify.js";
 import {
   BossLoginError,
@@ -160,7 +160,15 @@ export async function parseSearchCards(page) {
   }, SELECTORS).then((jobs) =>
     jobs
       .filter((job) => job.url && job.title && job.company && job.salary)
-      .map((job) => ({ ...job, id: deriveJobId(job) })),
+      .map((job) => {
+        const hr = normalizeHrFields({ hrName: job.hrName });
+        return {
+          ...job,
+          hrName: hr.hr_name ?? "",
+          hrActive: hr.hr_active ?? "",
+          id: deriveJobId(job),
+        };
+      }),
   );
 }
 

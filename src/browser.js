@@ -1,15 +1,35 @@
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { chromium } from "patchright";
 import { config } from "./config.js";
 
 const PAGE_NAVIGATION_HISTORY = new WeakMap();
+export const BROWSER_LOCK_STALE_MS = 90 * 60 * 1_000;
+
+export class BrowserBusyError extends Error {
+  constructor(lockPath, lockInfo) {
+    const owner = lockInfo?.pid ? ` by pid ${lockInfo.pid}` : "";
+    super(`Browser profile is busy${owner}: ${lockPath}`);
+    this.name = "BrowserBusyError";
+    this.code = "BROWSER_BUSY";
+    this.lockPath = lockPath;
+    this.lockInfo = lockInfo;
+  }
+}
 
 export async function launchBrowser({
-  userDataDir = config.paths.browserProfile,
+  userDataDir,
   headless = false,
 } = {}) {
+  const testProfile = !userDataDir && isNodeTestChild();
+  userDataDir = userDataDir ?? defaultUserDataDir();
   fs.mkdirSync(userDataDir, { recursive: true });
-  const releaseProfileLock = await acquireProfileLock(userDataDir);
+  const releaseProfileLock = acquireBrowserLock({
+    lockPath: testProfile
+      ? path.join(userDataDir, "agent.lock")
+      : defaultBrowserLockPath(),
+  });
 
   const options = {
     headless,
@@ -50,7 +70,12 @@ export async function launchBrowser({
     trackPageNavigations(page);
   }
   context.on("page", trackPageNavigations);
-  context.on("close", releaseProfileLock);
+  context.on("close", () => {
+    releaseProfileLock();
+    if (testProfile) {
+      removeTemporaryBrowserProfile(userDataDir);
+    }
+  });
   return context;
 }
 
@@ -98,38 +123,139 @@ export async function humanDelay(minMilliseconds, maxMilliseconds) {
   return duration;
 }
 
-async function acquireProfileLock(userDataDir) {
-  const lockPath = `${userDataDir}.lock`;
-  const deadline = Date.now() + 60_000;
+export function acquireBrowserLock({
+  lockPath = defaultBrowserLockPath(),
+  staleAfterMs = BROWSER_LOCK_STALE_MS,
+  now = Date.now,
+} = {}) {
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
 
-  while (Date.now() < deadline) {
+  for (;;) {
+    const nowMs = timestampMs(now());
+    const payload = JSON.stringify(
+      { pid: process.pid, createdAt: new Date(nowMs).toISOString() },
+      null,
+      2,
+    );
+
     try {
       const descriptor = fs.openSync(lockPath, "wx");
-      fs.writeFileSync(
-        descriptor,
-        JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }),
-      );
-      fs.closeSync(descriptor);
-
-      let released = false;
-      return () => {
-        if (released) return;
-        released = true;
-        fs.rmSync(lockPath, { force: true });
-      };
+      try {
+        fs.writeFileSync(descriptor, payload);
+      } finally {
+        fs.closeSync(descriptor);
+      }
+      return releaseBrowserLock(lockPath, payload);
     } catch (error) {
       if (error.code !== "EEXIST") {
         throw error;
       }
-
-      const stats = fs.statSync(lockPath, { throwIfNoEntry: false });
-      if (stats && Date.now() - stats.mtimeMs > 5 * 60_000) {
-        fs.rmSync(lockPath, { force: true });
-        continue;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 200));
     }
+
+    const lockInfo = readBrowserLock(lockPath);
+    if (!lockInfo) {
+      continue;
+    }
+    if (nowMs - lockInfo.createdAtMs > staleAfterMs) {
+      fs.rmSync(lockPath, { force: true });
+      continue;
+    }
+
+    throw new BrowserBusyError(lockPath, lockInfo);
+  }
+}
+
+function defaultBrowserLockPath() {
+  return path.join(config.paths.projectRoot, "data", "agent.lock");
+}
+
+function defaultUserDataDir() {
+  if (isNodeTestChild()) {
+    return fs.mkdtempSync(path.join(os.tmpdir(), "boss-job-agent-browser-"));
+  }
+  return config.paths.browserProfile;
+}
+
+function isNodeTestChild() {
+  return process.env.NODE_TEST_CONTEXT?.startsWith("child") === true;
+}
+
+function removeTemporaryBrowserProfile(userDataDir) {
+  const tempRoot = path.resolve(os.tmpdir());
+  const target = path.resolve(userDataDir);
+  if (!target.startsWith(`${tempRoot}${path.sep}`)) {
+    return;
+  }
+  try {
+    fs.rmSync(target, {
+      recursive: true,
+      force: true,
+      maxRetries: 3,
+      retryDelay: 100,
+    });
+  } catch {
+    // Chrome can keep profile files open briefly on Windows after close.
+  }
+}
+
+function readBrowserLock(lockPath) {
+  const stats = fs.statSync(lockPath, { throwIfNoEntry: false });
+  if (!stats) {
+    return null;
   }
 
-  throw new Error(`Timed out waiting for browser profile lock: ${lockPath}`);
+  let raw = "";
+  try {
+    raw = fs.readFileSync(lockPath, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return null;
+    }
+    throw error;
+  }
+
+  let parsed = {};
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = {};
+  }
+
+  const parsedCreatedAtMs = Date.parse(parsed.createdAt);
+  const createdAtMs = Number.isFinite(parsedCreatedAtMs)
+    ? parsedCreatedAtMs
+    : stats.mtimeMs;
+
+  return {
+    pid: parsed.pid ?? null,
+    createdAt: parsed.createdAt ?? null,
+    createdAtMs,
+    mtimeMs: stats.mtimeMs,
+    path: lockPath,
+  };
+}
+
+function releaseBrowserLock(lockPath, payload) {
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+
+    try {
+      if (fs.readFileSync(lockPath, "utf8") === payload) {
+        fs.rmSync(lockPath, { force: true });
+      }
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+  };
+}
+
+function timestampMs(value) {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  return Number(value);
 }

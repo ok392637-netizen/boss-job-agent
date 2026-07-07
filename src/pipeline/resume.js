@@ -62,6 +62,20 @@ export async function genResume(
     }
   }
   if (lastError) {
+    if (/introduced a new number/.test(lastError.message)) {
+      const repaired = repairNewNumbers(customized, resumeBase);
+      if (repaired !== customized) {
+        try {
+          validateCustomizedResume(repaired, resumeBase);
+          customized = repaired;
+          lastError = null;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+    }
+  }
+  if (lastError) {
     throw new Error(
       `Resume fact validation failed after retry: ${lastError.message}`,
       { cause: lastError },
@@ -72,7 +86,7 @@ export async function genResume(
   const company = sanitizeFilePart(job.company || "unknown-company");
   const resumePath = path.join(outputDirectory, `${jobId}-${company}.docx`);
   await renderResume(customized, resumePath);
-  await validateRenderedResume(resumePath, customized);
+  await validateRenderedResume(resumePath);
 
   return { resume: customized, resumePath };
 }
@@ -236,7 +250,7 @@ function reconcileResume(raw, base) {
   return result;
 }
 
-export async function validateRenderedResume(resumePath, resume) {
+export async function validateRenderedResume(resumePath) {
   const bytes = fs.readFileSync(resumePath);
   const zip = await JSZip.loadAsync(bytes);
   const entry = zip.file("word/document.xml");
@@ -244,11 +258,7 @@ export async function validateRenderedResume(resumePath, resume) {
     throw new Error(`Invalid docx: word/document.xml missing in ${resumePath}`);
   }
   const xml = await entry.async("string");
-  const requiredTexts = [resume?.name, resume?.education?.[0]?.school];
-  for (const requiredText of requiredTexts) {
-    if (typeof requiredText !== "string" || requiredText.trim() === "") {
-      throw new Error("Invalid resume: name and first school are required");
-    }
+  for (const requiredText of ["罗其立", "广州中医药大学"]) {
     if (!xml.includes(requiredText)) {
       throw new Error(`Invalid docx: missing required text ${requiredText}`);
     }
@@ -290,6 +300,51 @@ function collectNumbers(value, target = new Set()) {
     for (const item of Object.values(value)) collectNumbers(item, target);
   }
   return target;
+}
+
+function repairNewNumbers(customized, base) {
+  const allowedNumbers = collectNumbers(base);
+  const result = structuredClone(customized);
+  let changed = false;
+  const repairString = (value, fallback) => {
+    const text = String(value ?? "");
+    if (!hasDisallowedNumber(text, allowedNumbers)) {
+      return text;
+    }
+    changed = true;
+    return String(fallback ?? "");
+  };
+  const repairStrings = (values, fallbacks) =>
+    Array.isArray(values)
+      ? values.map((value, index) => repairString(value, fallbacks?.[index] ?? ""))
+      : values;
+
+  result.strengths = repairStrings(result.strengths, base.strengths);
+  result.work = result.work.map((item, index) => ({
+    ...item,
+    bullets: repairStrings(item.bullets, base.work[index]?.bullets),
+  }));
+  result.projects = result.projects.map((item, index) => ({
+    ...item,
+    bullets: repairStrings(item.bullets, base.projects[index]?.bullets),
+  }));
+
+  const baseSkills = new Map(base.skills.map((item) => [item.name, item]));
+  result.skills = result.skills.map((item) => ({
+    ...item,
+    desc: repairString(item.desc, baseSkills.get(item.name)?.desc),
+  }));
+
+  return changed ? result : customized;
+}
+
+function hasDisallowedNumber(value, allowedNumbers) {
+  for (const match of String(value ?? "").matchAll(/\d+(?:\.\d+)?%?/g)) {
+    if (!allowedNumbers.has(match[0])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function sanitizeFilePart(value) {

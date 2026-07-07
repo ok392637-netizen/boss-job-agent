@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat fixture</title>
+  </head>
+  <body>
+    <div class="user-list-content">
+      <ul role="group">
+        <li role="listitem" onclick="history.pushState({}, '', '?jobId=job-chat&uid=hr-1'); this.querySelector('.friend-content').classList.add('selected')">
+          <div class="friend-content-warp">
+            <span class="unread-count">2</span>
+            <div class="friend-content">
+              <div class="figure">
+                <img class="image-circle" src="https://example.test/avatar-chen.png" alt="">
+              </div>
+              <div class="text">
+                <div><span class="time">11:03</span></div>
+                <div class="title-box">
+                  <span class="name-box">
+                    <span class="name-text">陈经理</span>
+                    <span>测试公司</span>
+                    <i class="vline"></i>
+                    <span>招聘经理</span>
+                  </span>
+                </div>
+                <div class="gray last-msg">
+                  <span class="last-msg-text">可以聊聊你的项目吗？</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li role="listitem">
+          <div class="friend-content-warp">
+            <div class="friend-content">
+              <div class="figure">
+                <img class="image-circle" src="https://example.test/avatar-wang.png" alt="">
+              </div>
+              <div class="text">
+                <div><span class="time">昨天</span></div>
+                <div class="title-box">
+                  <span class="name-box">
+                    <span class="name-text">王女士</span>
+                    <span>另一家公司</span>
+                    <i class="vline"></i>
+                    <span>HRBP</span>
+                  </span>
+                </div>
+                <div class="gray last-msg">
+                  <span class="last-msg-text">历史消息</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-position-content">
+        <div class="position-content">
+          <span class="position-name">AI Agent Intern</span>
+          <span class="salary">3-5K</span>
+          <span class="city">Guangzhou</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-message">
+      <ul>
+        <li class="message-item item-friend" data-mid="m-1">
+          <div class="message-content">
+            <div class="text"><p><span class="text-content">可以聊聊你的项目吗？</span></p></div>
+          </div>
+        </li>
+        <li class="message-item item-myself" data-mid="m-2">
+          <div class="message-content">
+            <div class="text">
+              <i class="message-status status-delivery"> 送达 </i>
+              <p><span class="text-content">可以，我做过 n8n 自动化。</span></p>
+            </div>
+          </div>
+        </li>
+        <li class="message-item item-system" data-mid="m-3">
+          <div class="text"><span class="hyper-link">附件简历请求已发送</span></div>
+        </li>
+        <li class="message-item item-friend" data-mid="m-4">
+          <div class="message-content">
+            <div class="articles-center">
+              <div class="message-card-wrap blue">
+                <h3 class="message-card-top-title">你与该职位竞争者PK情况</h3>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>

@@ -10,7 +10,7 @@
     "jobDelaySec": [18, 50],
     "queryDelaySec": [30, 90]
   },
-  "screening": { "passScore": 45 },
+  "screening": { "passScore": 45, "companyPassScore": 40 },
   "greeting": {
     "dryRun": true,
     "dailyLimit": 30,
@@ -19,6 +19,14 @@
     "maxDelaySec": 90
   },
   "poll": { "intervalMin": 15 },
+  "chat": { "maxPerRun": 10, "backfillScrollRounds": 5 },
+  "resume": { "autoSend": false, "residentAttachmentName": "简历.pdf" },
+  "reply": {
+    "shadowMode": true,
+    "autoRoutine": false,
+    "maxAutoPerRun": 3,
+    "replyDelaySec": [30, 120]
+  },
   "lark": { "userOpenId": "ou_REPLACE_WITH_YOUR_OPEN_ID" },
   "llm": { "model": "deepseek-v4-pro", "fallbackModel": "deepseek-chat" }
 }

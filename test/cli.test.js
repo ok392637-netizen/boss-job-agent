@@ -15,12 +15,15 @@ import {
 import {
   getJob,
   getMeta,
+  insertMessage,
   openDatabase,
+  recordLoginEvent,
   saveMaterials,
   saveResumePath,
   saveScreenResult,
   setMeta,
   updateJobStatus,
+  upsertConversation,
   upsertJob,
 } from "../src/db.js";
 import {
@@ -506,6 +509,134 @@ test("circuit-reset CLI clears circuit_open and prints confirmation", async (t) 
   assert.deepEqual(output, ["circuit reset: closed"]);
 });
 
+test("CLI exposes chat command and keeps poll as deprecated alias", () => {
+  const program = createProgram();
+  const chat = program.commands.find((command) => command.name() === "chat");
+  const poll = program.commands.find((command) => command.name() === "poll");
+  const resumeSend = program.commands.find(
+    (command) => command.name() === "resume-send",
+  );
+
+  assert.ok(chat);
+  assert.ok(chat.options.some((option) => option.long === "--backfill"));
+  assert.ok(chat.options.some((option) => option.long === "--max"));
+  assert.match(poll.description(), /deprecated, alias of chat/);
+  assert.ok(resumeSend);
+  assert.ok(resumeSend.options.some((option) => option.long === "--conv"));
+  assert.ok(resumeSend.options.some((option) => option.long === "--send"));
+});
+
+test("resume-send CLI is dry-run by default and approved only with --send=approved", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "boss-cli-resume-send-"));
+  const databasePath = path.join(directory, "resume-send.db");
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const calls = [];
+  const output = [];
+  const originalLog = console.log;
+  console.log = (...values) => output.push(values.join(" "));
+  try {
+    const program = createProgram({
+      runResumeSendFn: async ({ convKey, approved }) => {
+        calls.push({ convKey, approved });
+        return {
+          conversationKey: convKey,
+          jobId: "job-cli",
+          dryRun: !approved,
+          approved,
+          resumePath: "data/resumes/cli.docx",
+          plan: {
+            upload: ["upload plan"],
+            send: ["send plan"],
+          },
+        };
+      },
+    });
+
+    await program.parseAsync([
+      "node",
+      "boss-job-agent",
+      "--database",
+      databasePath,
+      "resume-send",
+      "--conv",
+      "conv-cli-dry",
+    ]);
+    await program.parseAsync([
+      "node",
+      "boss-job-agent",
+      "--database",
+      databasePath,
+      "resume-send",
+      "--conv",
+      "conv-cli-send",
+      "--send=approved",
+    ]);
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.deepEqual(calls, [
+    { convKey: "conv-cli-dry", approved: false },
+    { convKey: "conv-cli-send", approved: true },
+  ]);
+  assert.match(output[0], /dryRun=true/);
+  assert.match(output[1], /dryRun=false/);
+});
+
+test("reply CLI sends approved pending drafts as dry-run by default", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "boss-cli-reply-"));
+  const databasePath = path.join(directory, "reply.db");
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const calls = [];
+  const output = [];
+  const originalLog = console.log;
+  console.log = (...values) => output.push(values.join(" "));
+  try {
+    const program = createProgram({
+      runReplyFn: async ({ convKey, approved }) => {
+        calls.push({ convKey, approved });
+        return {
+          conversationKey: convKey,
+          dryRun: !approved,
+          approved,
+          sent: Boolean(approved),
+          text: "您好，可以继续沟通。",
+          plan: ["open Boss chat conversation: conv-cli-reply"],
+        };
+      },
+    });
+
+    await program.parseAsync([
+      "node",
+      "boss-job-agent",
+      "--database",
+      databasePath,
+      "reply",
+      "--conv",
+      "conv-cli-reply-dry",
+    ]);
+    await program.parseAsync([
+      "node",
+      "boss-job-agent",
+      "--database",
+      databasePath,
+      "reply",
+      "--conv",
+      "conv-cli-reply-send",
+      "--send",
+    ]);
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.deepEqual(calls, [
+    { convKey: "conv-cli-reply-dry", approved: false },
+    { convKey: "conv-cli-reply-send", approved: true },
+  ]);
+  assert.match(output[0], /reply conv=conv-cli-reply-dry dryRun=true/);
+  assert.match(output[1], /reply conv=conv-cli-reply-send dryRun=false/);
+});
+
 test("status snapshot and formatting include all pipeline states", () => {
   const db = openDatabase(":memory:");
   try {
@@ -513,12 +644,26 @@ test("status snapshot and formatting include all pipeline states", () => {
       id: "status-job",
       url: "https://example.test/status-job",
     });
+    const conversation = upsertConversation(db, {
+      bossConvKey: "conv-status",
+      hrName: "陈经理",
+    });
+    insertMessage(db, conversation.id, {
+      role: "hr",
+      text: "状态测试",
+      sentLabel: "m-status",
+    });
+    recordLoginEvent(db, "ok");
     const snapshot = getStatusSnapshot(db, {
       now: new Date("2026-06-13T10:00:00+08:00"),
     });
     const text = formatStatus(snapshot);
     assert.match(text, /discovered: 1/);
+    assert.match(text, /resume_sent: 0/);
     assert.match(text, /notified: 0/);
+    assert.match(text, /conversations: 1/);
+    assert.match(text, /messages: 1/);
+    assert.match(text, /last login: ok/);
     assert.match(text, /circuit: closed/);
   } finally {
     db.close();

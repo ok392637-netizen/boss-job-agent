@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat resume panel fixture</title>
+  </head>
+  <body>
+    <div class="chat-container page-container">
+      <div class="message-content">
+        <div class="chat-message">
+          <ul class="im-list" id="messages">
+            <li class="message-item item-friend">
+              <div class="message-content">
+                <div class="text"><p><span class="text-content">可以发一份简历吗？</span></p></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="chat-im chat-editor">
+        <div class="chat-controls">
+          <div class="toolbar-btn-content">
+            <div aria-label="" d-c="62009" class="toolbar-btn tooltip tooltip-top" id="resume-toolbar">
+              发简历
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="boss-layer__wrapper" id="resume-panel" style="display: none">
+      <div class="dialog-wrap resume-panel">
+        <h3>请选择要发送的简历</h3>
+        <ul class="resume-list">
+          <li class="list-item" data-file="简历.pdf">
+            <span class="icon-file"></span>
+            <div class="item-body">
+              <div><span class="resume-name">简历.pdf</span></div>
+            </div>
+          </li>
+          <li class="list-item" data-file="罗其立简历.pdf">
+            <span class="icon-file"></span>
+            <div class="item-body">
+              <div><span class="resume-name">罗其立简历.pdf</span></div>
+            </div>
+          </li>
+          <li class="list-item" data-file="不会启用发送.pdf" data-enable="false">
+            <span class="icon-file"></span>
+            <div class="item-body">
+              <div><span class="resume-name">不会启用发送.pdf</span></div>
+            </div>
+          </li>
+        </ul>
+        <button type="button" class="btn-v2 btn-sure-v2 btn-confirm disabled" id="panel-send">发送</button>
+      </div>
+    </div>
+
+    <script>
+      document.body.dataset.events = "";
+      const panel = document.querySelector("#resume-panel");
+      const sendButton = document.querySelector("#panel-send");
+      const record = (eventName) => {
+        document.body.dataset.events = document.body.dataset.events
+          ? `${document.body.dataset.events}|${eventName}`
+          : eventName;
+      };
+
+      document.querySelector("#resume-toolbar").addEventListener("click", () => {
+        record("toolbar-resume");
+        panel.style.display = "block";
+      });
+
+      document.querySelectorAll(".list-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          record(`select:${item.dataset.file}`);
+          document.body.dataset.selectedAttachment = item.dataset.file;
+          document.querySelectorAll(".list-item").forEach((element) => {
+            element.classList.remove("selected");
+          });
+          item.classList.add("selected");
+          if (item.dataset.enable === "false") {
+            return;
+          }
+          window.setTimeout(() => {
+            sendButton.classList.remove("disabled");
+          }, 150);
+        });
+      });
+
+      sendButton.addEventListener("click", () => {
+        record("send-click");
+        if (sendButton.classList.contains("disabled")) {
+          document.body.dataset.sentWhileDisabled = "true";
+          return;
+        }
+        const item = document.createElement("li");
+        item.className = "message-item item-myself";
+        item.textContent = `您的附件简历已发送给对方 ${document.body.dataset.selectedAttachment}`;
+        document.querySelector("#messages").append(item);
+        panel.style.display = "none";
+      });
+    </script>
+  </body>
+</html>

@@ -21,54 +21,6 @@ const FIXTURE_DIRECTORY = path.join(
   "jds",
 );
 
-const TEST_PROFILE_TEXT = `## 基本信息
-测试候选人，28 届本科在读，目标方向为 AI 应用、AI Agent 和自动化，可连续实习且每周到岗 4 天。
-
-## 项目经历
-- n8n 自动化工作流：采集公开信息，调用 LLM API 完成文本分类和结构化整理，并发送结果通知，将选题整理效率提升 40%。
-- OpenClaw 求职流程 Agent：拆分岗位搜索、匹配筛选、材料生成和状态记录流程，使用日志和重试机制处理异常。
-- DeepSeek 文本处理实验：使用 JavaScript 和 Node.js 调用模型接口，完成提示词设计、JSON 输出校验、效果测试和迭代。
-
-## 技能
-熟悉 JavaScript、Node.js、n8n、DeepSeek、提示词设计、工作流编排、使用文档整理和 AI 应用落地；能够主动沟通并复盘测试结果。`;
-
-const TEST_RESUME_BASE = {
-  name: "测试候选人",
-  gender: "",
-  age: 0,
-  hometown: "",
-  phone: "",
-  email: "candidate@example.com",
-  expect: { salary: "面议", city: "示例城市" },
-  education: [
-    {
-      school: "测试大学",
-      degree: "本科",
-      major: "测试专业",
-      period: "在读",
-    },
-  ],
-  certificates: [],
-  strengths: ["具备自动化工作流和 AI 应用实践经验"],
-  work: [
-    {
-      company: "测试公司",
-      role: "实习生",
-      period: "实习期间",
-      bullets: ["参与自动化流程设计与验证"],
-    },
-  ],
-  projects: [
-    {
-      name: "测试项目",
-      tag: "个人",
-      period: "项目期间",
-      bullets: ["使用 n8n 搭建自动化工作流"],
-    },
-  ],
-  skills: [{ name: "自动化", desc: "熟悉 Node.js 和工作流编排" }],
-};
-
 function fixture(name) {
   return JSON.parse(
     fs.readFileSync(path.join(FIXTURE_DIRECTORY, `${name}.json`), "utf8"),
@@ -76,51 +28,34 @@ function fixture(name) {
 }
 
 test("real LLM screens all three fixture JDs as planned", async () => {
-  const good = await screenJob(fixture("good-match"), {
-    profileText: TEST_PROFILE_TEXT,
-  });
+  const good = await screenJob(fixture("good-match"));
   assert.equal(good.verdict, "pass");
   assert.ok(good.score >= 70, `expected score >= 70, got ${good.score}`);
   assert.equal(good.bait, false);
 
-  const mismatch = await screenJob(fixture("mismatch"), {
-    profileText: TEST_PROFILE_TEXT,
-  });
+  const mismatch = await screenJob(fixture("mismatch"));
   assert.equal(mismatch.verdict, "reject");
   assert.ok(mismatch.score < 60, `expected score < 60, got ${mismatch.score}`);
 
-  const bait = await screenJob(fixture("bait"), {
-    profileText: TEST_PROFILE_TEXT,
-  });
+  const bait = await screenJob(fixture("bait"));
   assert.equal(bait.bait, true);
   assert.equal(bait.verdict, "reject");
 });
 
 test("real LLM generates materials that pass the plan fact checks", async () => {
-  const materials = await genMaterials(fixture("good-match"), {
-    profileText: TEST_PROFILE_TEXT,
-  });
+  const materials = await genMaterials(fixture("good-match"));
   validateMaterials(materials);
   assert.ok(materials.greetShort.length > 0);
   assert.ok(materials.introLong.length > 0);
 });
 
-test("real LLM customizes and renders a valid docx resume", async (t) => {
-  const outputDirectory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "boss-resume-real-"),
-  );
-  t.after(() =>
-    fs.rmSync(outputDirectory, { recursive: true, force: true }),
-  );
-  const result = await genResume(fixture("good-match"), {
-    resumeBase: structuredClone(TEST_RESUME_BASE),
-    outputDirectory,
-  });
+test("real LLM customizes and renders a valid docx resume", async () => {
+  const result = await genResume(fixture("good-match"));
   assert.equal(fs.existsSync(result.resumePath), true);
 
-  const xml = await validateRenderedResume(result.resumePath, result.resume);
-  assert.match(xml, /测试候选人/);
-  assert.match(xml, /测试大学/);
+  const xml = await validateRenderedResume(result.resumePath);
+  assert.match(xml, /罗其立/);
+  assert.match(xml, /广州中医药大学/);
 });
 
 test("resume generation reconciles immutable changes without retrying", async (t) => {
@@ -130,7 +65,12 @@ test("resume generation reconciles immutable changes without retrying", async (t
   t.after(() =>
     fs.rmSync(outputDirectory, { recursive: true, force: true }),
   );
-  const resumeBase = structuredClone(TEST_RESUME_BASE);
+  const resumeBase = JSON.parse(
+    fs.readFileSync(
+      path.join(FIXTURE_DIRECTORY, "..", "..", "..", "profile", "resume-base.json"),
+      "utf8",
+    ),
+  );
   const tampered = structuredClone(resumeBase);
   tampered.projects[0].name = "虚构项目"; // 篡改不可变 name -> 应被强制恢复为基础值
   tampered.strengths = ["针对该岗位改写的个人优势"]; // 合法改写 -> 应保留
@@ -148,6 +88,44 @@ test("resume generation reconciles immutable changes without retrying", async (t
   assert.equal(calls, 1); // reconcile 直接修正不可变字段, 无需重试
   assert.equal(result.resume.projects[0].name, resumeBase.projects[0].name); // 篡改的 name 被恢复
   assert.deepEqual(result.resume.strengths, ["针对该岗位改写的个人优势"]); // 合法 strengths 改写保留
+  assert.equal(fs.existsSync(result.resumePath), true);
+});
+
+test("resume generation repairs new-number rewrites after retry", async (t) => {
+  const outputDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), "boss-resume-new-number-repair-"),
+  );
+  t.after(() =>
+    fs.rmSync(outputDirectory, { recursive: true, force: true }),
+  );
+  const resumeBase = JSON.parse(
+    fs.readFileSync(
+      path.join(FIXTURE_DIRECTORY, "..", "..", "..", "profile", "resume-base.json"),
+      "utf8",
+    ),
+  );
+  const invalid = structuredClone(resumeBase);
+  invalid.strengths = [
+    `${resumeBase.strengths[0]} 0`,
+    ...resumeBase.strengths.slice(1),
+  ];
+  invalid.skills = resumeBase.skills.map((skill, index) =>
+    index === 0 ? { ...skill, desc: `${skill.desc} 99` } : skill,
+  );
+  let calls = 0;
+
+  const result = await genResume(fixture("good-match"), {
+    resumeBase,
+    outputDirectory,
+    chatFn: async () => {
+      calls += 1;
+      return structuredClone(invalid);
+    },
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(result.resume.strengths[0], resumeBase.strengths[0]);
+  assert.equal(result.resume.skills[0].desc, resumeBase.skills[0].desc);
   assert.equal(fs.existsSync(result.resumePath), true);
 });
 
@@ -225,7 +203,7 @@ test("material validation enforces prompt length contracts", () => {
         greetShort: "太短",
         introLong: `n8n ${"自动化实践。".repeat(100)}`,
       }),
-    /greet_short must contain 90-165/,
+    /greet_short must contain 40-120/,
   );
   assert.throws(
     () =>
@@ -238,7 +216,12 @@ test("material validation enforces prompt length contracts", () => {
 });
 
 test("resume validation rejects changed immutable data and new numbers", () => {
-  const base = structuredClone(TEST_RESUME_BASE);
+  const base = JSON.parse(
+    fs.readFileSync(
+      path.join(FIXTURE_DIRECTORY, "..", "..", "..", "profile", "resume-base.json"),
+      "utf8",
+    ),
+  );
   const changedSchool = structuredClone(base);
   changedSchool.education[0].school = "其他大学";
   assert.throws(

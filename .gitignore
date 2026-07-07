@@ -15,3 +15,4 @@ data/logs/
 # 个人真实档案（仅提交 *.example.* 模板）
 profile/profile.md
 profile/resume-base.json
+profile/photo.jpg

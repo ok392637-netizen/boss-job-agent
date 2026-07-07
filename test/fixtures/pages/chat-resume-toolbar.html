@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat resume toolbar fixture</title>
+  </head>
+  <body>
+    <div class="chat-container page-container">
+      <div class="message-content">
+        <div class="chat-message">
+          <ul class="im-list" id="messages">
+            <li class="message-item item-friend">
+              <div class="message-content">
+                <div class="text"><p><span class="text-content">可以发一份简历吗？</span></p></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="chat-im chat-editor">
+        <div class="chat-controls">
+          <div class="toolbar-btn-content">
+            <div aria-label="" d-c="62009" class="toolbar-btn tooltip tooltip-top" id="resume-toolbar">
+              发简历
+            </div>
+          </div>
+        </div>
+        <div class="editor-container">
+          <div contenteditable="true" id="chat-input" class="chat-input"></div>
+          <div class="chat-op">
+            <button type="send" d-c="62013" class="btn-v2 btn-sure-v2 btn-send disabled">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.__events = [];
+      document.querySelector("#resume-toolbar").addEventListener("click", () => {
+        window.__events.push("toolbar-resume");
+        const item = document.createElement("li");
+        item.className = "message-item item-system";
+        item.textContent = "附件简历请求已发送";
+        document.querySelector("#messages").append(item);
+      });
+    </script>
+  </body>
+</html>

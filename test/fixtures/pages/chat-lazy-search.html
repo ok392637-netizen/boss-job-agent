@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Chat lazy search fixture</title>
+  </head>
+  <body>
+    <div class="chat-sidebar">
+      <div class="search-input">
+        <input id="conversation-search" placeholder="搜索30天内的联系人" type="search">
+      </div>
+      <div class="user-list-content">
+        <ul role="group" id="conversation-list"></ul>
+      </div>
+      <div class="search-result-content">
+        <ul id="search-results"></ul>
+      </div>
+    </div>
+
+    <div class="chat-container page-container">
+      <div class="message-content">
+        <div class="chat-message">
+          <ul class="im-list" id="messages">
+            <li class="message-item item-friend">
+              <div class="message-content">
+                <div class="text">
+                  <p><span class="text-content">可以发一份简历吗？</span></p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="chat-im chat-editor">
+        <div class="chat-controls">
+          <div class="toolbar-btn-content">
+            <div aria-label="" d-c="62009" class="toolbar-btn tooltip tooltip-top" id="resume-toolbar">
+              发简历
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const conversations = {
+        recent: {
+          hrName: "陈经理",
+          company: "最近公司",
+          role: "招聘经理",
+          jobTitle: "AI项目实习生",
+          avatar: "https://example.test/avatar-chen.png",
+          lastMsg: "最近消息",
+        },
+        sameNameWrong: {
+          hrName: "周女士",
+          company: "广州彩集",
+          role: "HR",
+          jobTitle: "AI项目实习生",
+          avatar: "https://example.test/avatar-zhou-wrong.png",
+          lastMsg: "同名但不是目标公司",
+        },
+        target: {
+          hrName: "周女士",
+          company: "瘦吧健康产业集团",
+          role: "HR",
+          jobTitle: "AI项目实习生",
+          avatar: "https://example.test/avatar-zhou-target.png",
+          lastMsg: "目标公司历史消息",
+        },
+      };
+
+      const list = document.querySelector("#conversation-list");
+      const searchResults = document.querySelector("#search-results");
+      const search = document.querySelector("#conversation-search");
+      let typedQuery = "";
+
+      function render(items) {
+        list.replaceChildren(...items.map((item) => {
+          const row = document.createElement("li");
+          row.setAttribute("role", "listitem");
+          row.innerHTML = `
+            <div class="friend-content-warp">
+              <div class="friend-content">
+                <div class="figure"><img class="image-circle" src="${item.avatar}" alt=""></div>
+                <div class="text">
+                  <div><span class="time">昨天</span></div>
+                  <div class="title-box">
+                    <span class="name-box">
+                      <span class="name-text">${item.hrName}</span>
+                      <span>${item.company}</span>
+                      <i class="vline"></i>
+                      <span>${item.role}</span>
+                    </span>
+                  </div>
+                  <div class="gray last-msg"><span class="last-msg-text">${item.lastMsg}</span></div>
+                </div>
+              </div>
+            </div>
+          `;
+          row.addEventListener("click", () => {
+            document.body.dataset.clickedHr = item.hrName;
+            document.body.dataset.clickedCompany = item.company;
+            document.body.dataset.clickedSource = "list";
+            document.querySelectorAll("[role='listitem'] .friend-content").forEach((element) => {
+              element.classList.remove("selected");
+            });
+            row.querySelector(".friend-content").classList.add("selected");
+          });
+          return row;
+        }));
+      }
+
+      function renderSearchResults(items) {
+        searchResults.replaceChildren(...items.map((item) => {
+          const row = document.createElement("li");
+          row.className = "search-list";
+          row.innerHTML = `
+            <div class="figure"><img class="image-circle" src="${item.avatar}" alt=""></div>
+            <div class="text">
+              <div class="first-line">
+                <span class="boss-name">${item.hrName}</span>
+                <span>${item.company}</span>
+                <span>招聘者</span>
+              </div>
+              <div class="second-line">
+                <span>职位:${item.jobTitle}</span>
+              </div>
+            </div>
+          `;
+          row.addEventListener("click", () => {
+            document.body.dataset.clickedHr = item.hrName;
+            document.body.dataset.clickedCompany = item.company;
+            document.body.dataset.clickedSource = "search";
+            document.querySelectorAll("li.search-list").forEach((element) => {
+              element.classList.remove("selected");
+            });
+            row.classList.add("selected");
+          });
+          return row;
+        }));
+      }
+
+      render([conversations.recent, conversations.sameNameWrong]);
+      renderSearchResults([]);
+
+      search.addEventListener("input", (event) => {
+        const value = search.value.trim();
+        if (value === "") {
+          document.body.dataset.lastSearch = "";
+          document.body.dataset.searchCleared = "true";
+          typedQuery = "";
+          renderSearchResults([]);
+          render([conversations.recent, conversations.sameNameWrong]);
+        } else if (event.inputType === "insertText" && event.data) {
+          document.body.dataset.keyboardStarted = "true";
+          typedQuery += event.data;
+          document.body.dataset.typedQuery = typedQuery;
+        } else if (!document.body.dataset.keyboardStarted) {
+          document.body.dataset.fillLikeQueryInput = "true";
+        }
+      });
+
+      search.addEventListener("keydown", (event) => {
+        document.body.dataset.keyboardStarted = "true";
+        if (event.key !== "Enter") {
+          return;
+        }
+        const value = search.value.trim();
+        document.body.dataset.enterPressed = "true";
+        document.body.dataset.lastSubmittedSearch = value;
+        document.body.dataset.submittedSearches = document.body.dataset.submittedSearches
+          ? `${document.body.dataset.submittedSearches}|${value}`
+          : value;
+        if (value.includes("瘦吧")) {
+          document.body.dataset.searchedTarget = "true";
+          renderSearchResults([conversations.sameNameWrong, conversations.target]);
+        } else if (value.includes("周女士")) {
+          document.body.dataset.searchedSameNameOnly = "true";
+          renderSearchResults([conversations.sameNameWrong]);
+        } else {
+          renderSearchResults([]);
+        }
+      });
+
+      document.querySelector("#resume-toolbar").addEventListener("click", () => {
+        document.body.dataset.toolbarResume = "true";
+        const item = document.createElement("li");
+        item.className = "message-item item-system";
+        item.textContent = "附件简历请求已发送";
+        document.querySelector("#messages").append(item);
+      });
+    </script>
+  </body>
+</html>

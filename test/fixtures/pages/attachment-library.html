@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Attachment library fixture</title>
+</head>
+<body>
+  <nav class="user-nav">个人中心</nav>
+  <main class="resume-main">
+    <section class="attachment-manage">
+      <header class="attachment-header">
+        <h2>附件管理</h2>
+        <span class="file-count">文件 (3/3)</span>
+        <button class="upload-add" type="button" aria-label="新增附件">+</button>
+      </header>
+      <ul class="attachment-list">
+        <li class="attachment-item" data-slot="1" data-updated-at="2026-07-01 09:00">
+          <span class="attachment-name">罗其立-通用简历.pdf</span>
+          <span class="attachment-time">2026-07-01 09:00</span>
+          <button class="more-menu" type="button" aria-label="更多">⋮</button>
+        </li>
+        <li class="attachment-item" data-slot="2" data-updated-at="2026-07-02 10:00">
+          <span class="attachment-name">罗其立-简历.docx</span>
+          <span class="attachment-time">2026-07-02 10:00</span>
+          <button class="more-menu" type="button" aria-label="更多">⋮</button>
+        </li>
+        <li class="attachment-item" data-slot="3" data-updated-at="2026-07-03 11:00">
+          <span class="attachment-name">罗其立-简历-2.docx</span>
+          <span class="attachment-time">2026-07-03 11:00</span>
+          <button class="more-menu" type="button" aria-label="更多">⋮</button>
+        </li>
+      </ul>
+    </section>
+
+    <div class="upload-menu" hidden>
+      <button type="button">上传简历</button>
+      <button type="button">上传作品集</button>
+      <button type="button">上传视频</button>
+      <button type="button">制作附件简历</button>
+    </div>
+
+    <div class="upload-modal" role="dialog" aria-label="上传附件简历" hidden>
+      <p>PDF/DOC/DOCX/JPG/PNG, ≤20M</p>
+      <input type="file" class="resume-file-input">
+      <button type="button" class="upload-confirm">上传附件简历</button>
+      <button type="button" class="modal-close">关闭</button>
+    </div>
+
+    <div class="row-menu" hidden>
+      <button type="button">预览</button>
+      <button type="button">下载</button>
+      <button type="button">重命名</button>
+      <button type="button">编辑</button>
+      <button type="button" class="delete-entry">删除</button>
+    </div>
+
+    <div class="delete-dialog" role="dialog" aria-label="温馨提示" hidden>
+      <h3>温馨提示</h3>
+      <p>确认删除该附件简历吗？已发送给Boss的附件简历不受删除影响</p>
+      <button type="button" class="cancel-delete">取消</button>
+      <button type="button" class="confirm-delete">确定</button>
+    </div>
+  </main>
+</body>
+</html>

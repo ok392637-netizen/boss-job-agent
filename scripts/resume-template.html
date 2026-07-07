@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --ink: #17191e;
+    --muted: #59626e;
+    --line: #e5e8ec;
+    --teal: #0f5257;
+    --side: #103e43;
+    --side-2: #0b3034;
+    --side-text: #dbe8e8;
+    --side-muted: #9bbcbc;
+  }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Source Han Sans SC", "Noto Sans CJK SC", "微软雅黑", "Microsoft YaHei", sans-serif;
+    color: var(--ink); font-size: 10.5px; line-height: 1.55;
+    width: 210mm; height: 297mm; overflow: hidden; display: flex; background: #fff;
+  }
+  /* ============ SIDEBAR ============ */
+  .side {
+    width: 68mm; flex-shrink: 0;
+    background: linear-gradient(165deg, var(--side) 0%, var(--side-2) 100%);
+    color: var(--side-text); padding: 11mm 9mm 11mm 10mm;
+  }
+  .photo-wrap { display: flex; justify-content: center; margin-bottom: 13px; }
+  .photo {
+    width: 33mm; height: 44mm; object-fit: cover; border-radius: 6px;
+    border: 2px solid rgba(255,255,255,.30); box-shadow: 0 4px 14px rgba(0,0,0,.30);
+  }
+  .side-name { text-align: center; font-size: 23px; font-weight: 800; letter-spacing: 3px; color: #fff; }
+  .side-tag { text-align: center; font-size: 10px; color: var(--side-muted); margin-top: 5px; letter-spacing: .5px; }
+  .side-sec { margin-top: 15px; }
+  .side-h { font-size: 12px; font-weight: 800; color: #fff; letter-spacing: 2px; padding-bottom: 5px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.20); }
+  .kv { font-size: 10px; margin-bottom: 6px; color: var(--side-text); word-break: break-all; }
+  .side-edu .school { font-weight: 700; color: #fff; font-size: 11px; }
+  .side-edu .major { color: var(--side-muted); font-size: 9.5px; margin-top: 2px; }
+  .side-edu .period { color: var(--side-muted); font-size: 9px; margin-top: 2px; }
+  .skill-b { margin-bottom: 6.5px; }
+  .skill-b:last-child { margin-bottom: 0; }
+  .skill-b .k { font-weight: 700; color: #fff; font-size: 10px; }
+  .skill-b .v { color: var(--side-muted); font-size: 9.2px; line-height: 1.42; margin-top: 1px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .chip { background: rgba(255,255,255,.13); color: #eaf4f4; font-size: 9.5px; font-weight: 600; padding: 2.5px 9px; border-radius: 4px; }
+  /* ============ MAIN ============ */
+  .main { flex: 1; padding: 12mm 12mm 12mm 11mm; display: flex; flex-direction: column; }
+  .head-tag { font-size: 12.5px; color: var(--teal); font-weight: 700; letter-spacing: 1px; }
+  .head-expect { font-size: 10.5px; color: var(--muted); margin-top: 5px; }
+  .head-expect b { color: var(--ink); }
+  section.m { margin-top: 15px; }
+  section.m:first-of-type { margin-top: 5px; }
+  .m-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 800; color: var(--teal); letter-spacing: 1px; margin-bottom: 8px; }
+  .m-title::before { content: ""; width: 4px; height: 15px; background: var(--teal); border-radius: 2px; }
+  .m-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .entry { margin-bottom: 10px; }
+  .entry:last-child { margin-bottom: 0; }
+  .entry-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .entry-title { font-size: 12px; font-weight: 700; }
+  .entry-title .role { font-weight: 500; color: var(--muted); font-size: 10.5px; margin-left: 7px; }
+  .entry-period { font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+  ul.b { list-style: none; margin-top: 5px; }
+  ul.b li { position: relative; padding-left: 14px; margin-bottom: 4px; color: #2b2f36; }
+  ul.b li:last-child { margin-bottom: 0; }
+  ul.b li::before { content: ""; position: absolute; left: 3px; top: 8px; width: 3.5px; height: 3.5px; border-radius: 50%; background: var(--teal); }
+  ul.b li b { color: var(--teal); font-weight: 700; }
+</style>
+</head>
+<body>
+  <aside class="side">
+    <div class="photo-wrap"><img class="photo" src="{{PHOTO}}" alt=""></div>
+    <div class="side-name">罗其立</div>
+    <div class="side-tag">AI 应用 / Agent / 自动化</div>
+
+    <div class="side-sec">
+      <div class="side-h">联系方式</div>
+      <div class="kv">📱 &nbsp;13800138000</div>
+      <div class="kv">✉ &nbsp;resume@example.com</div>
+      <div class="kv">📍 &nbsp;广州 · 随时到岗</div>
+    </div>
+
+    <div class="side-sec side-edu">
+      <div class="side-h">教育背景</div>
+      <div class="school">广州中医药大学 · 本科</div>
+      <div class="major">中药资源与开发（跨专业转 AI）</div>
+      <div class="period">2024 – 2028 · 28 届</div>
+      <div class="chips"><span class="chip">CET-4</span></div>
+    </div>
+
+    <div class="side-sec">
+      <div class="side-h">技能</div>
+      <div class="skill-b"><div class="k">AI 工具</div><div class="v">ChatGPT · Claude · Cursor · Claude Code · Vibe Coding</div></div>
+      <div class="skill-b"><div class="k">低代码 AI 平台</div><div class="v">Coze · Dify 搭建 Agent、对话流与自动化流程</div></div>
+      <div class="skill-b"><div class="k">自动化工作流</div><div class="v">n8n 全链路工作流设计与落地</div></div>
+      <div class="skill-b"><div class="k">后端基础</div><div class="v">Java 基础 · AI 记忆系统后端实践</div></div>
+      <div class="skill-b"><div class="k">AI 产品理解</div><div class="v">Agent 逻辑 / 能力边界 / 需求拆解</div></div>
+      <div class="skill-b"><div class="k">AI × HR 方向</div><div class="v">招聘流程模块化，判断可自动化环节</div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="head-tag">AI 应用 / Agent / 自动化 · 求职意向</div>
+    <div class="head-expect">期望：<b>广州 · AI 应用方向 · 3-8K · 实习</b></div>
+
+    <section class="m">
+      <div class="m-title">个人优势</div>
+      <ul class="b">
+        <li>广州中医药大学在读，<b>跨专业背景</b>，快速上手能力强，自驱力强。</li>
+        <li>熟练 <b>Cursor / Claude Code</b> 等 AI 编程工具，擅长 Vibe Coding，自然语言驱动快速产出可运行脚本与自动化工作流。</li>
+        <li>深度使用 ChatGPT、Claude 等主流大模型，对 <b>AI Agent 逻辑与能力边界</b>有直观理解。</li>
+        <li>有完整的 <b>n8n 自动化工作流</b>设计与落地经验，善于拆解流程痛点、用自动化消灭机械重复劳动。</li>
+      </ul>
+    </section>
+
+    <section class="m">
+      <div class="m-title">实习经历</div>
+      <div class="entry">
+        <div class="entry-head">
+          <div class="entry-title">深圳市诸葛瓜科技有限公司<span class="role">后端开发 / Java</span></div>
+          <div class="entry-period">2026.01 – 2026.04</div>
+        </div>
+        <ul class="b">
+          <li>参与 <b>AI 记忆系统</b>模块设计、开发与优化，负责后端接口、数据存储与调用逻辑。</li>
+          <li>支撑 AI 在多轮交互中的信息记录、读取与调用，保障上下文连续性。</li>
+          <li>参与功能迭代、问题排查与系统维护。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="m">
+      <div class="m-title">项目经历</div>
+      <div class="entry">
+        <div class="entry-head">
+          <div class="entry-title">基于 n8n 的抖音热点自动化监控系统<span class="role">个人</span></div>
+          <div class="entry-period">2025.09 – 2026.01</div>
+        </div>
+        <ul class="b">
+          <li>用 n8n 编排全链路：每日自动抓取抖音热榜 → AI 生成分析报告 → 自动推送辅助选题。</li>
+          <li><b>选题效率提升 40%</b>，数据响应缩短至 10 分钟内。</li>
+        </ul>
+      </div>
+      <div class="entry">
+        <div class="entry-head">
+          <div class="entry-title">求职投递 Agent<span class="role">个人</span></div>
+          <div class="entry-period">2026.06 – 至今</div>
+        </div>
+        <ul class="b">
+          <li>patchright + LLM 端到端自动化：岗位筛选 → 公司背调（识别挂羊头岗位）→ 逐岗定制简历 → 分级代回复。</li>
+          <li>把招聘流程<b>镜像成候选人侧模块</b>（来源 / 解析 / 触达 / 跟进），AI×HR 方向可直接复用。</li>
+        </ul>
+      </div>
+      <div class="entry">
+        <div class="entry-head">
+          <div class="entry-title">AI 记忆系统后端开发<span class="role">Java</span></div>
+          <div class="entry-period">2026.01 – 2026.06</div>
+        </div>
+        <ul class="b">
+          <li>面向 AI 应用场景的记忆系统后端：模块设计、接口开发、数据存储与调用逻辑。</li>
+          <li>支持多轮交互的信息记录、读取和调用，参与功能迭代与问题排查。</li>
+        </ul>
+      </div>
+      <div class="entry">
+        <div class="entry-head">
+          <div class="entry-title">Hacker News 智能新闻摘要工作流<span class="role">个人</span></div>
+          <div class="entry-period">2025.09 – 2026.01</div>
+        </div>
+        <ul class="b">
+          <li>每日自动获取技术新闻 → AI 生成中文摘要 → 邮件推送，<b>每日节省 30 分钟</b>查阅时间。</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -5,33 +5,98 @@ import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 
 const LARK_COMMAND = resolveLarkCommand();
+const LARK_IDENTITIES = ["user", "bot"];
 
-export async function notifyText(text) {
-  return runLark([
-    "im",
-    "+messages-send",
-    "--as",
-    "user",
-    "--user-id",
-    config.lark.userOpenId,
-    "--text",
-    String(text),
-    "--json",
-  ]);
+export async function notifyText(text, { runLarkFn = runLark } = {}) {
+  const { receipt } = await runWithIdentityFallback({
+    args: [
+      "im",
+      "+messages-send",
+      "--user-id",
+      config.lark.userOpenId,
+      "--text",
+      String(text),
+      "--json",
+    ],
+    runLarkFn,
+  });
+  return receipt;
 }
 
-export async function notifyMarkdown(markdown) {
-  return runLark([
+export async function notifyMarkdown(markdown, { runLarkFn = runLark } = {}) {
+  const { receipt } = await runWithIdentityFallback({
+    args: [
+      "im",
+      "+messages-send",
+      "--user-id",
+      config.lark.userOpenId,
+      "--markdown",
+      String(markdown),
+      "--json",
+    ],
+    runLarkFn,
+  });
+  return receipt;
+}
+
+function withIdentity(args, identity) {
+  return [
     "im",
     "+messages-send",
     "--as",
-    "user",
-    "--user-id",
-    config.lark.userOpenId,
-    "--markdown",
-    String(markdown),
-    "--json",
-  ]);
+    identity,
+    ...args.slice(2),
+  ];
+}
+
+async function runWithIdentityFallback({
+  args,
+  runLarkFn = runLark,
+  cwd = config.paths.projectRoot,
+  shouldFallback = isAuthenticationError,
+} = {}) {
+  const failures = [];
+  for (const identity of LARK_IDENTITIES) {
+    try {
+      const receipt = await runLarkFn(withIdentity(args, identity), { cwd });
+      return { identity, receipt, failures };
+    } catch (error) {
+      failures.push({ identity, error });
+      if (identity === "user" && !shouldFallback(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw identityFailureError(failures);
+}
+
+function identityFailureError(failures) {
+  const summaries = failures.map(
+    ({ identity, error }) => `${identity}: ${summarizeError(error)}`,
+  );
+  const error = new Error(
+    `lark-cli failed for all identities: ${summaries.join(" | ")}`,
+  );
+  error.identityFailures = summaries;
+  return error;
+}
+
+function isAuthenticationError(error) {
+  const message = String(error?.message ?? error).toLowerCase();
+  return [
+    "auth",
+    "authentication",
+    "unauthorized",
+    "token",
+    "login",
+    "credential",
+    "expired",
+    "invalid_grant",
+    "not logged in",
+    "session",
+    "401",
+  ].some((term) => message.includes(term));
 }
 
 export async function notifyFile(
@@ -73,22 +138,21 @@ export async function notifyFile(
     `.${path.sep}${relativePath}`,
     "--json",
   ];
-  const failures = [];
-  for (const identity of ["user", "bot"]) {
-    try {
-      const receipt = await runLarkFn(
-        [...fileArguments.slice(0, 2), "--as", identity, ...fileArguments.slice(2)],
-        { cwd: config.paths.projectRoot },
-      );
-      results.push({
-        mode: "file",
-        identity,
-        receipt,
-      });
-      return results;
-    } catch (error) {
-      failures.push(`${identity}: ${summarizeError(error)}`);
-    }
+  let failures = [];
+  try {
+    const { identity, receipt } = await runWithIdentityFallback({
+      args: fileArguments,
+      runLarkFn,
+      shouldFallback: () => true,
+    });
+    results.push({
+      mode: "file",
+      identity,
+      receipt,
+    });
+    return results;
+  } catch (error) {
+    failures = error.identityFailures ?? [summarizeError(error)];
   }
 
   const fallback = [

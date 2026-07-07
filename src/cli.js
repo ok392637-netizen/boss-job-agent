@@ -8,15 +8,22 @@ import { CircuitBreakerError } from "./boss/greet.js";
 import {
   formatStatus,
   getStatusSnapshot,
+  runChat,
   runGreetQueue,
   runLogin,
   runPoll,
+  runReply,
+  runResumeSend,
+  runResearchBackfill,
   runScan,
   runTestNotify,
   resetCircuit,
 } from "./workflows.js";
 
-export function createProgram() {
+export function createProgram({
+  runResumeSendFn = runResumeSend,
+  runReplyFn = runReply,
+} = {}) {
   const program = new Command();
   program
     .name("boss-job-agent")
@@ -67,11 +74,80 @@ export function createProgram() {
     });
 
   program
+    .command("chat")
+    .description("Read all recruiter conversations, persist messages, and notify Feishu")
+    .option("--backfill", "scan all conversations and send one aggregate notification")
+    .option("--max <number>", "maximum changed conversations to open", parsePositiveInteger)
+    .action(async (options, command) => {
+      const result = await withDatabase(command, (db) =>
+        runChat({
+          db,
+          backfill: Boolean(options.backfill),
+          maxConversations: options.max ?? config.chat.maxPerRun,
+          replyConfig: config.reply,
+          resumeConfig: config.resume,
+        }),
+      );
+      console.log(formatChatResult("chat", result));
+    });
+
+  program
     .command("poll")
-    .description("Poll new recruiter replies and notify Feishu")
+    .description("Poll new recruiter replies and notify Feishu (deprecated, alias of chat)")
     .action(async (_options, command) => {
-      const results = await withDatabase(command, (db) => runPoll({ db }));
-      console.log(`poll notifications=${results.length}`);
+      const result = await withDatabase(command, (db) => runPoll({ db }));
+      console.log(formatChatResult("poll", result));
+    });
+
+  program
+    .command("resume-send")
+    .description("Customize and send the resume for one conversation; dry-run by default")
+    .requiredOption("--conv <key>", "Boss conversation key")
+    .option("--send [approval]", "send for real only when approved")
+    .action(async (options, command) => {
+      const approved = parseResumeSendApproval(options.send);
+      const result = await withDatabase(command, (db) =>
+        runResumeSendFn({
+          db,
+          convKey: options.conv,
+          approved,
+        }),
+      );
+      console.log(formatResumeSendResult(result));
+    });
+
+  program
+    .command("reply")
+    .description("Send an approved pending chat reply for one conversation; dry-run by default")
+    .requiredOption("--conv <key>", "Boss conversation key")
+    .option("--send [approval]", "send for real only when explicitly passed")
+    .action(async (options, command) => {
+      const approved = parseReplySendApproval(options.send);
+      const result = await withDatabase(command, (db) =>
+        runReplyFn({
+          db,
+          convKey: options.conv,
+          approved,
+        }),
+      );
+      console.log(formatReplyResult(result));
+    });
+
+  program
+    .command("research")
+    .description("Backfill company research for greeted/replied jobs (does not change status)")
+    .option("--limit <number>", "maximum companies to research", parsePositiveInteger)
+    .action(async (options, command) => {
+      const result = await withDatabase(command, (db) =>
+        runResearchBackfill({
+          db,
+          limit: options.limit ?? Number.POSITIVE_INFINITY,
+        }),
+      );
+      console.log(
+        `research backfill: total=${result.total} researched=${result.researched} rejected=${result.rejected} errors=${result.errors}` +
+          (result.skipped ? ` skipped=${result.skipped}` : ""),
+      );
     });
 
   program
@@ -117,7 +193,21 @@ export function createProgram() {
 
 export function formatGreetResult(result, dryRun) {
   const summary = `greet attempted=${result.attempted} dryRun=${dryRun}`;
+  if (result.skipped) return `${summary} skipped=${result.skipped}`;
   return result.stopped ? `${summary} stopped=${result.stopped}` : summary;
+}
+
+export function formatChatResult(command, result) {
+  const summary = `${command} conversations=${result.conversations} opened=${result.opened} newHrMessages=${result.newHrMessages} resumeRequests=${result.resumeRequests ?? 0} notified=${result.notified} loginOk=${result.loginOk}`;
+  return result.skipped ? `${summary} skipped=${result.skipped}` : summary;
+}
+
+export function formatResumeSendResult(result) {
+  return `resume-send conv=${result.conversationKey} job=${result.jobId ?? "none"} dryRun=${result.dryRun} approved=${result.approved} resume=${result.resumePath ?? "none"}`;
+}
+
+export function formatReplyResult(result) {
+  return `reply conv=${result.conversationKey} dryRun=${result.dryRun} approved=${result.approved} sent=${result.sent} text=${previewText(result.text)}`;
 }
 
 async function withDatabase(command, callback) {
@@ -136,6 +226,31 @@ function parsePositiveInteger(value) {
     throw new Error(`Expected a positive integer, got: ${value}`);
   }
   return parsed;
+}
+
+function parseResumeSendApproval(value) {
+  if (value === undefined || value === false) {
+    return false;
+  }
+  if (value === true || value === "approved") {
+    return true;
+  }
+  throw new Error("Real resume sending requires --send=approved");
+}
+
+function parseReplySendApproval(value) {
+  if (value === undefined || value === false) {
+    return false;
+  }
+  if (value === true || value === "approved") {
+    return true;
+  }
+  throw new Error("Real reply sending requires --send or --send=approved");
+}
+
+function previewText(value) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  return text.length > 40 ? `${text.slice(0, 40)}...` : text;
 }
 
 export async function main(argv = process.argv) {

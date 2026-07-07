@@ -69,6 +69,8 @@ test("search card selectors extract complete job fields", async () => {
               <span class="boss-name">测试公司</span>
             </a>
             <span class="company-location">广州·天河区</span>
+            <div class="info-public"><span class="name">陈经理
+2周内活跃</span></div>
           </div>
         </li>
       </ul>
@@ -82,7 +84,8 @@ test("search card selectors extract complete job fields", async () => {
         company: "测试公司",
         salary: "3-5K",
         city: "广州·天河区",
-        hrName: "",
+        hrName: "陈经理",
+        hrActive: "2周内活跃",
       },
     ]);
   } finally {
